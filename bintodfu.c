@@ -50,6 +50,8 @@ int main(int argc, char * argv[])
 	
 	dfuse_writesuffix(dfusefile, dfufile);
 	
+	printf("Checksum: <%x>\n", dfusefile->suffix->crc);
+	
 	dfuse_cleanup(dfusefile);
 	
 	close(binfile);
@@ -278,10 +280,7 @@ int dfuse_writesuffix(dfuse_file * dfusefile, int dfufile)
 		printf("UHOHHHHHHHH\n");
 	lseek(dfufile, 0, SEEK_END);
 	dfusefile->suffix->crc = chksum_crc32(crcbuf, (dfusefile->prefix->dfu_image_size+12));
-	free(crcbuf);
-	
-	printf("<%x>\n", dfusefile->suffix->crc);
-	
+	free(crcbuf);	
 	
 	// 	for (i=0; i<256; i+=6)
 	// 	{
