@@ -3,8 +3,9 @@
 #include <libusb-1.0/libusb.h>
 #include <sys/types.h>
 
-#define STM32VENDOR 0xffff
-#define STM32PRODUCT 0xffff
+#define STM32VENDOR 0x15ba
+#define STM32PRODUCT 0x3
+#define LENITFDATA 300
 
 int main(int argc, char * argv[])
 {
@@ -12,17 +13,19 @@ int main(int argc, char * argv[])
 	libusb_device * dfudev;
 	libusb_device_handle * dfuhandle;
 	struct libusb_device_descriptor devdesc;
+	struct libusb_config_descriptor * config;
+	struct libusb_interface_descriptor * itf;
 	ssize_t nlistdevs;
-	int i;
+	int i, j, k;
 	int err;
-	//malloc of size 0 is necessary for initial free() to be successful
-	int * devs = (int *)malloc(0);
-	int ndevs = 0;
+	int ct;
+	int ndfudevs = 0;
+	char * itfdata = (char *)malloc(sizeof(char)*LENITFDATA);
 	
 	libusb_init(NULL);
 	
 	nlistdevs = libusb_get_device_list(NULL, &devlist);
-	if (ndevs < 0)
+	if (nlistdevs < 0)
 	{
 		printf("error getting device list\n");
 		exit(-1);
@@ -42,10 +45,30 @@ int main(int argc, char * argv[])
 		
 		if ((devdesc.idVendor == STM32VENDOR) && (devdesc.idProduct == STM32PRODUCT))
 		{
-			ndevs++;
-			free(devs);
-			devs = (int *)malloc(sizeof(int)*ndevs);
-			devs[ndevs-1] = i;
+			err = libusb_open(devlist[i], &dfuhandle);
+			if (err)
+			{
+				printf("error opening dfu device handle\n");
+				exit(-1);
+			}
+
+			for (j=0; j<devdesc.bNumConfigurations; j++)
+			{
+				if (libusb_get_config_descriptor(devlist[i], j, &config))
+				{
+					printf("failed to get config descriptor %d::%d\n", i, j);
+				}
+				for (k=0; k<config->bNumInterfaces; k++)
+				{
+					
+					ct = libusb_get_descriptor(dfuhandle, LIBUSB_DT_INTERFACE, k, itfdata, LENITFDATA);
+					printf("{\n%s\n}\n", itfdata);
+					itf = itfdata;
+					printf("<%d>::<%d>\n", itf->bInterfaceClass, itf->bInterfaceProtocol);
+				}
+				libusb_free_config_descriptor(config);
+			}
+			libusb_close(dfuhandle);
 		}
 	}	
 	
@@ -59,10 +82,6 @@ int main(int argc, char * argv[])
 		}
 		libusb_close(dfuhandle);
 	}
-	
-	printf("hi\n");
-	
-	free(devs);
 	
 	libusb_free_device_list(devlist, 1);
 	
