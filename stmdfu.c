@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <libusb-1.0/libusb.h>
 #include <sys/types.h>
+#include "dfurequests.h"
 
-#define STM32VENDOR 0x15ba
-#define STM32PRODUCT 0x3
-#define LENITFDATA 300
+#define STM32VENDOR 0x424
+#define STM32PRODUCT 0xa700
 
 int main(int argc, char * argv[])
 {
@@ -13,15 +13,12 @@ int main(int argc, char * argv[])
 	libusb_device * dfudev;
 	libusb_device_handle * dfuhandle;
 	struct libusb_device_descriptor devdesc;
-	struct libusb_config_descriptor * config;
-	struct libusb_interface_descriptor * itf;
+	struct libusb_config_descriptor * cfgdesc;
 	ssize_t nlistdevs;
-	int i, j, k;
+	int i, j, k, l;
 	int err;
-	int ct;
 	int ndfudevs = 0;
-	char * itfdata = (char *)malloc(sizeof(char)*LENITFDATA);
-	
+		
 	libusb_init(NULL);
 	
 	nlistdevs = libusb_get_device_list(NULL, &devlist);
@@ -48,29 +45,50 @@ int main(int argc, char * argv[])
 			err = libusb_open(devlist[i], &dfuhandle);
 			if (err)
 			{
-				printf("error opening dfu device handle\n");
-				exit(-1);
+				printf("error opening device handle <%d>\n", i);
 			}
-
+			
+			//according to DFU 1.1 standard, a DFU device in DFU Mode
+			//will have only one each of a configuration and interface.
+			//but we'll parse as if there are multiple anyways!
+			
+			//iterate through available configurations
 			for (j=0; j<devdesc.bNumConfigurations; j++)
 			{
-				if (libusb_get_config_descriptor(devlist[i], j, &config))
+				if (libusb_get_config_descriptor(devlist[i], j, &cfgdesc))
 				{
 					printf("failed to get config descriptor %d::%d\n", i, j);
 				}
-				for (k=0; k<config->bNumInterfaces; k++)
+				//iterate through available interfaces
+				for (k=0; k<cfgdesc->bNumInterfaces; k++)
 				{
-					
-					ct = libusb_get_descriptor(dfuhandle, LIBUSB_DT_INTERFACE, k, itfdata, LENITFDATA);
-					printf("{\n%s\n}\n", itfdata);
-					itf = itfdata;
-					printf("<%d>::<%d>\n", itf->bInterfaceClass, itf->bInterfaceProtocol);
+					//iterate through available alternate settings
+					for (l=0; l<cfgdesc->interface[k].num_altsetting; l++)
+					{
+						printf("<%d>::<%d>::<%d>\n\n",
+						cfgdesc->interface[k].altsetting[l].bInterfaceClass,
+						cfgdesc->interface[k].altsetting[l].bInterfaceSubClass,
+						cfgdesc->interface[k].altsetting[l].bInterfaceProtocol);
+						
+						if (cfgdesc->interface[k].altsetting[l].bInterfaceClass == DFU_ITF_CLASS &&
+							cfgdesc->interface[k].altsetting[l].bInterfaceSubClass == DFU_ITF_SUBCLASS &&
+							cfgdesc->interface[k].altsetting[l].bInterfaceProtocol == DFU_ITF_PROTOCOL)
+						{
+							ndfudevs++;
+							dfudev = devlist[i];
+						}
+					}
 				}
-				libusb_free_config_descriptor(config);
+				libusb_free_config_descriptor(cfgdesc);
 			}
 			libusb_close(dfuhandle);
 		}
-	}	
+	}
+	
+	if (ndfudevs > 1)
+	{
+		printf("More than 1 STM32 DFU device connected.\nTargetting last enumerated STM32 DFU device.\n");
+	}
 	
 	if (dfudev)
 	{
@@ -80,10 +98,14 @@ int main(int argc, char * argv[])
 			printf("error opening dfu device handle\n");
 			exit(-1);
 		}
+		libusb_free_device_list(devlist, 1);
+		
+		//now we've got a handle to the DFU device we want to deal with
+		
 		libusb_close(dfuhandle);
+	} else {
+		libusb_free_device_list(devlist, 1);
 	}
-	
-	libusb_free_device_list(devlist, 1);
 	
 	libusb_exit(NULL);
 	
