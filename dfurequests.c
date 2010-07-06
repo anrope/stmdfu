@@ -32,8 +32,6 @@
  * before the giving up going into dfu mode. */
 #define DFU_DETACH_TIMEOUT 1000
 
-static uint16_t transaction = 0;
-
 static int32_t dfu_find_interface( const struct usb_device *device,
                                    const dfu_bool honor_interfaceclass );
 static int32_t dfu_make_idle( dfu_device *device, const dfu_bool initial_abort );
@@ -83,7 +81,7 @@ int32_t dfu_detach( dfu_device *device, const int32_t timeout )
  *
  *  returns the number of bytes written or < 0 on error
  */
-int32_t dfu_download( dfu_device *device, const size_t length, uint8_t* data )
+int32_t dfu_download(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t length)
 {
     int32_t result;
 
@@ -103,7 +101,7 @@ int32_t dfu_download( dfu_device *device, const size_t length, uint8_t* data )
     result = libusb_control_transfer( device->handle,
           /* bmRequestType */ USB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_DNLOAD,
-          /* wValue        */ transaction++,
+          /* wValue        */ wvalue,
           /* wIndex        */ device->interface,
           /* Data          */ (char *) data,
           /* wLength       */ length,

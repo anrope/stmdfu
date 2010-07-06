@@ -3,14 +3,36 @@
 #include <libusb-1.0/libusb.h>
 #include <sys/types.h>
 #include "dfurequests.h"
+#include "dfucommands.h"
 
 #define STM32VENDOR 0x424
 #define STM32PRODUCT 0xa700
 
+dfu_device * find_dfu_device();
+void cleanup(dfu_device * dfudev);
+
 int main(int argc, char * argv[])
 {
+	dfu_device * dfudev;
+	libusb_device_handle * dfuhandle;
+	int i, j;
+	int err;
+	
+	dfudev = find_dfu_device();
+	
+	//now we've got a handle to the DFU device we want to deal with
+	dfu_set_address_pointer(dfudev, 0x08000000);
+	
+	cleanup(dfudev);
+	
+	return 0;
+}
+
+dfu_device * find_dfu_device()
+{
 	libusb_device ** devlist;
-	libusb_device * dfudev;
+	libusb_device * dfutemp;
+	dfu_device * dfudev;
 	libusb_device_handle * dfuhandle;
 	struct libusb_device_descriptor devdesc;
 	struct libusb_config_descriptor * cfgdesc;
@@ -18,7 +40,9 @@ int main(int argc, char * argv[])
 	int i, j, k, l;
 	int err;
 	int ndfudevs = 0;
-		
+	
+	dfudev = (dfu_device *)malloc(sizeof(dfu_device));
+	
 	libusb_init(NULL);
 	
 	nlistdevs = libusb_get_device_list(NULL, &devlist);
@@ -66,17 +90,18 @@ int main(int argc, char * argv[])
 					for (l=0; l<cfgdesc->interface[k].num_altsetting; l++)
 					{
 						printf("<%d>::<%d>::<%d>\n\n",
-						cfgdesc->interface[k].altsetting[l].bInterfaceClass,
-						cfgdesc->interface[k].altsetting[l].bInterfaceSubClass,
-						cfgdesc->interface[k].altsetting[l].bInterfaceProtocol);
-						
-						if (cfgdesc->interface[k].altsetting[l].bInterfaceClass == DFU_ITF_CLASS &&
-							cfgdesc->interface[k].altsetting[l].bInterfaceSubClass == DFU_ITF_SUBCLASS &&
-							cfgdesc->interface[k].altsetting[l].bInterfaceProtocol == DFU_ITF_PROTOCOL)
-						{
-							ndfudevs++;
-							dfudev = devlist[i];
-						}
+								cfgdesc->interface[k].altsetting[l].bInterfaceClass,
+								cfgdesc->interface[k].altsetting[l].bInterfaceSubClass,
+								cfgdesc->interface[k].altsetting[l].bInterfaceProtocol);
+								
+								if (cfgdesc->interface[k].altsetting[l].bInterfaceClass == DFU_ITF_CLASS &&
+									cfgdesc->interface[k].altsetting[l].bInterfaceSubClass == DFU_ITF_SUBCLASS &&
+									cfgdesc->interface[k].altsetting[l].bInterfaceProtocol == DFU_ITF_PROTOCOL)
+								{
+									ndfudevs++;
+									dfutemp = devlist[i];
+									dfudev->interface = k;
+								}
 					}
 				}
 				libusb_free_config_descriptor(cfgdesc);
@@ -85,31 +110,25 @@ int main(int argc, char * argv[])
 		}
 	}
 	
+	//calling function will need to call libusb_close(dfudev->handle)
+	err = libusb_open(dfutemp, &dfudev->handle);
+	if (err)
+	{
+		printf("error opening dfudev handle \n");
+	}
+	libusb_free_device_list(devlist, 1);
+	
 	if (ndfudevs > 1)
 	{
 		printf("More than 1 STM32 DFU device connected.\nTargetting last enumerated STM32 DFU device.\n");
 	}
 	
-	if (dfudev)
-	{
-		err = libusb_open(dfudev, &dfuhandle);
-		if (err)
-		{
-			printf("error opening dfu device handle\n");
-			exit(-1);
-		}
-		libusb_free_device_list(devlist, 1);
-		
-		//now we've got a handle to the DFU device we want to deal with
-		
-		libusb_close(dfuhandle);
-	} else {
-		libusb_free_device_list(devlist, 1);
-	}
-	
-	libusb_exit(NULL);
-	
-	return 0;
+	return dfunode;
 }
-	
-	
+
+void cleanup(dfu_device * dfudev)
+{
+	free(dfudev);
+	libusb_close(dfudev->handle);	
+	libusb_exit(NULL);
+}

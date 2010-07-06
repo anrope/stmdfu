@@ -280,14 +280,8 @@ int dfuse_writesuffix(dfuse_file * dfusefile, int dfufile)
 		printf("UHOHHHHHHHH\n");
 	lseek(dfufile, 0, SEEK_END);
 	dfusefile->suffix->crc = chksum_crc32(crcbuf, (dfusefile->prefix->dfu_image_size+12));
-	free(crcbuf);	
+	free(crcbuf);
 	
-	// 	for (i=0; i<256; i+=6)
-	// 	{
-	// 		printf("%x, %x, %x, %x, %x, %x\n", crc_tab[i], crc_tab[i+1], crc_tab[i+2], \
-	// 		crc_tab[i+3], crc_tab[i+4], crc_tab[i+5]);
-	// 	}
-		
 	ct += DFUWRITE(dfusefile->suffix->crc);
 	
 	return ct;
