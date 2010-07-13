@@ -97,7 +97,7 @@ typedef struct {
 
 int32_t dfu_detach( dfu_device *device, const int32_t timeout );
 int32_t dfu_download(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t length);
-int32_t dfu_upload( dfu_device *device, const size_t length, uint8_t* data );
+int32_t dfu_upload(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t length);
 int32_t dfu_get_status( dfu_device *device, dfu_status *status );
 int32_t dfu_clear_status( dfu_device *device );
 int32_t dfu_get_state( dfu_device *device );

@@ -120,7 +120,7 @@ int32_t dfu_download(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t 
  *
  *  returns the number of bytes received or < 0 on error
  */
-int32_t dfu_upload( dfu_device *device, const size_t length, uint8_t* data )
+int32_t dfu_upload(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t length)
 {
     int32_t result;
 
@@ -136,7 +136,7 @@ int32_t dfu_upload( dfu_device *device, const size_t length, uint8_t* data )
     result = libusb_control_transfer( device->handle,
           /* bmRequestType */ USB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_UPLOAD,
-          /* wValue        */ transaction++,
+          /* wValue        */ wvalue,
           /* wIndex        */ device->interface,
           /* Data          */ (char *) data,
           /* wLength       */ length,
