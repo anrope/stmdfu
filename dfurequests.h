@@ -25,9 +25,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-#include "dfu-bool.h"
-#include "dfu-device.h"
-
 //DFU interface constants
 #define DFU_ITF_CLASS 0xfe
 #define DFU_ITF_SUBCLASS 0x01

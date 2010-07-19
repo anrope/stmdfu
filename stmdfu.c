@@ -5,8 +5,8 @@
 #include "dfurequests.h"
 #include "dfucommands.h"
 
-#define STM32VENDOR 0x424
-#define STM32PRODUCT 0xa700
+#define STM32VENDOR 0x0483
+#define STM32PRODUCT 0xdf11
 
 dfu_device * find_dfu_device();
 void cleanup(dfu_device * dfudev);
@@ -21,7 +21,7 @@ int main(int argc, char * argv[])
 	dfudev = find_dfu_device();
 	
 	//now we've got a handle to the DFU device we want to deal with
-	dfu_set_address_pointer(dfudev, 0x08000000);
+// 	dfu_set_address_pointer(dfudev, 0x08000000);
 	
 	cleanup(dfudev);
 	
@@ -123,7 +123,7 @@ dfu_device * find_dfu_device()
 		printf("More than 1 STM32 DFU device connected.\nTargetting last enumerated STM32 DFU device.\n");
 	}
 	
-	return dfunode;
+	return dfudev;
 }
 
 void cleanup(dfu_device * dfudev)

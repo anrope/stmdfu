@@ -22,7 +22,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 #include "dfurequests.h"
 
 /* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
@@ -31,11 +31,6 @@
 /* Time (in ms) for the device to wait for the usb reset after being told to detach
  * before the giving up going into dfu mode. */
 #define DFU_DETACH_TIMEOUT 1000
-
-static int32_t dfu_find_interface( const struct usb_device *device,
-                                   const dfu_bool honor_interfaceclass );
-static int32_t dfu_make_idle( dfu_device *device, const dfu_bool initial_abort );
-static void dfu_msg_response_output( const char *function, const int32_t result );
 
 #if HAVE_CONFIG_H
 # include <config.h>

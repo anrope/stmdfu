@@ -1,8 +1,15 @@
+#include <stdio.h>
+#include <math.h>
+#include <libusb-1.0/libusb.h>
 #include "dfurequests.h"
 #include "dfucommands.h"
 
 int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
 {
+	int32_t read_2048, read_2;
+	dfu_status status;
+	int i;
+	
 	if (length % 2 != 0)
 	{
 		printf("read length must be a multiple of 2 bytes\n");
@@ -15,7 +22,7 @@ int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
 	
 	for (i=0; i<read_2048; i++)
 	{
-		if (0 > dfu_upload(device, i+2, membuf[i*2048], 2048))
+		if (0 > dfu_upload(device, i+2, &membuf[i*2048], 2048))
 		{
 			printf("read_2048 error\n");
 		}
@@ -28,7 +35,7 @@ int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
 	
 	for (i=0; i<read_2; i++)
 	{
-		if (0 > dfu_upload(device, i+2+(read_2048*2048), membuf[(i*2)+(read_2048*2048)], 2))
+		if (0 > dfu_upload(device, i+2+(read_2048*2048), &membuf[(i*2)+(read_2048*2048)], 2))
 		{
 			printf("read_2 error\n");
 		}
@@ -38,6 +45,8 @@ int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
 			printf("dfu_read_memory: dfu_get_status error 2\n");
 		}
 	}
+	
+	return 1;
 }
 
 int32_t dfu_get(dfu_device * device, uint8_t * data)
@@ -55,13 +64,14 @@ int32_t dfu_get(dfu_device * device, uint8_t * data)
 		printf("dfu_get: dfu_get_status error\n");
 	}
 	
-	return data;
+	return 1;
 }
 
 int32_t dfu_set_address_pointer(dfu_device * device, int32_t address)
 {
 	dfu_status status;
 	int8_t command[5] = {0x21, 0, 0, 0, 0};
+	int i;
 	
 	int8_t * addr = &address;
 	
@@ -105,6 +115,7 @@ int32_t dfu_erase(dfu_device * device, int32_t address)
 {
 	int8_t command[5] = {0x41, 0, 0, 0, 0};
 	dfu_status status;
+	int i;
 	
 	int8_t * addr = &address;
 	
@@ -122,6 +133,8 @@ int32_t dfu_erase(dfu_device * device, int32_t address)
 	{
 		printf("dfu_erase: dfu_get_status error\n");
 	}
+	
+	return 1;
 }
 
 int32_t dfu_erase_mass(dfu_device * device)
@@ -193,7 +206,7 @@ static int32_t dfu_make_idle( dfu_device *device, const int initial_abort )
 				
 			case STATE_APP_DETACH:
 			case STATE_DFU_MANIFEST_WAIT_RESET:
-				usb_reset( device->handle );
+				libusb_reset_device(device->handle);
 				return 1;
 		}
 		
