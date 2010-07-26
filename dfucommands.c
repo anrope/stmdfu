@@ -4,11 +4,12 @@
 #include "dfurequests.h"
 #include "dfucommands.h"
 
-int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
+int32_t dfu_read_memory(dfu_device * device, uint8_t * membuf, uint32_t length)
 {
 	int32_t read_2048, read_2;
 	dfu_status status;
 	int i;
+	int rv;
 	
 	if (length % 2 != 0)
 	{
@@ -18,10 +19,12 @@ int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
 	
 	//this can be optimized
 	read_2048 = floor(length / 2048);
-	read_2 = (length-(2048*read_2048))/2;
+// 	read_2 = (length-(2048*read_2048))/2;
 	
+	//flash reads must be 2k, which is the flash block size on stm32
 	for (i=0; i<read_2048; i++)
 	{
+		printf("read_2048:\n");
 		if (0 > dfu_upload(device, i+2, &membuf[i*2048], 2048))
 		{
 			printf("read_2048 error\n");
@@ -31,23 +34,64 @@ int32_t dfu_read_memory(dfu_device * device, int8_t * membuf, int32_t length)
 		{
 			printf("dfu_read_memory: dfu_get_status error\n");
 		}
-	}
-	
-	for (i=0; i<read_2; i++)
-	{
-		if (0 > dfu_upload(device, i+2+(read_2048*2048), &membuf[(i*2)+(read_2048*2048)], 2))
-		{
-			printf("read_2 error\n");
-		}
 		
-		if (0 > dfu_get_status(device, &status))
+		if (status.bState == STATE_DFU_ERROR)
 		{
-			printf("dfu_read_memory: dfu_get_status error 2\n");
+			if (status.bStatus == DFU_STATUS_ERROR_VENDOR)
+			{
+				printf("dfu_read_memory failed: flash read protection enabled\n");
+				return -1;
+			} else
+			{
+				printf("dfu_read_memory failed: reason unknown\n");
+			}
 		}
 	}
 	
+// 	for (i=0; i<read_2; i++)
+// 	{
+// 		printf("read_2:\n");
+// 		
+// 		rv = dfu_upload(device, i+2+(read_2048*2048), &membuf[(i*2)+(read_2048*2048)], 2);
+// 		
+// 		if (0 > rv)
+// 		{
+// 			printf("read_2 error: <%d>\n", rv);
+// 		}
+// 		
+// 		if (0 > dfu_get_status(device, &status))
+// 		{
+// 			printf("dfu_read_memory: dfu_get_status error 2\n");
+// 		}
+// 	}
+
 	return 1;
 }
+
+int32_t dfu_read_optbytes(dfu_device * device, uint8_t * membuf)
+{
+	dfu_status status;
+	int rv;
+	
+	dfu_set_address_pointer(device, OPTION_BYTES_ADDRESS);
+	
+	dfu_make_idle(device, 0);
+	
+	rv = dfu_upload(device, 2, membuf, 16);
+	
+	if (0 > rv)
+	{
+		printf("dfu_read_optbytes failed: control transfer error <%d>\n", rv);
+	}
+	
+	if (0 > dfu_get_status(device, &status))
+	{
+		printf("dfu_read_optbytes: dfu_get_status error\n");
+	}
+	
+	return 0;
+}
+
 
 int32_t dfu_get(dfu_device * device, uint8_t * data)
 {
@@ -67,11 +111,67 @@ int32_t dfu_get(dfu_device * device, uint8_t * data)
 	return 1;
 }
 
+int32_t dfu_write_memory(dfu_device * device, uint8_t * membuf, uint32_t length)
+{
+	int write_2048;
+	int i, j;
+	dfu_status status;
+	int rv;
+	
+	write_2048 = length / 2048;
+	
+	for (i=0; i<write_2048; i++)
+	{
+		printf("write_2048: <%d>\n", i);
+		rv = dfu_download(device, i+2, &membuf[i*2048], 2048);
+		
+		if (0 > rv)
+		{
+			printf("dfu_write_memory: dfu_download error <%d>\n", rv);
+		}
+		
+		if (0 > dfu_get_status(device, &status))
+		{
+			printf("dfu_write_memory: dfu_get_status error\n");
+		}
+		
+		if (status.bState != STATE_DFU_DOWNLOAD_BUSY)
+		{
+			printf("dfu_write_memory: not in STATE_DFU_DOWNLOAD_BUSY after dfu_download\n");
+		}
+		
+		if (0 > dfu_get_status(device, &status))
+		{
+			printf("dfu_write_memory: dfu_get_status error 2\n");
+		}
+		
+		if (status.bState == STATE_DFU_ERROR)
+		{
+			if (status.bStatus == DFU_STATUS_ERROR_TARGET)
+			{
+				printf("dfu_write_memory failed: received address wrong/unsupported\n");
+				return -1;
+			} else if (status.bStatus == DFU_STATUS_ERROR_VENDOR)
+			{
+				printf("dfu_write_memory failed: flash read protection enabled\n");
+				return -2;
+			} else
+			{
+				printf("dfu_write_memory failed: reason unknown\n");
+				return -3;
+			}
+		}
+	}
+	
+	return 0;
+}
+
 int32_t dfu_set_address_pointer(dfu_device * device, int32_t address)
 {
 	dfu_status status;
 	int8_t command[5] = {0x21, 0, 0, 0, 0};
 	int i;
+	int rv;
 	
 	int8_t * addr = &address;
 	
@@ -80,9 +180,18 @@ int32_t dfu_set_address_pointer(dfu_device * device, int32_t address)
 		command[i+1] = addr[i];
 	}
 	
-	if (5 != dfu_download(device, 0, command, 5))
+	printf("command: 0x%.2x 0x%.2x 0x%.2x 0x%.2x 0x%.2x\n",
+			command[0],
+			command[1],
+			command[2],
+			command[3],
+			command[4]);
+	
+	rv = dfu_download(device, 0, command, 5);
+	
+	if (5 != rv)
 	{
-		printf("dfu_set_address_pointer: dfu_download error\n");
+		printf("dfu_set_address_pointer: dfu_download error <%d>\n", rv);
 	}
 	
 	if (0 > dfu_get_status(device, &status))
@@ -124,7 +233,7 @@ int32_t dfu_erase(dfu_device * device, int32_t address)
 		command[i+1] = addr[i];
 	}
 	
-	if (1 != dfu_download(device, 0, command, 1))
+	if (5 != dfu_download(device, 0, command, 5))
 	{
 		printf("dfu_erase: dfu_download error\n");
 	}
@@ -134,10 +243,31 @@ int32_t dfu_erase(dfu_device * device, int32_t address)
 		printf("dfu_erase: dfu_get_status error\n");
 	}
 	
+	if (status.bState == STATE_DFU_ERROR)
+	{
+		if (status.bStatus == DFU_STATUS_ERROR_TARGET)
+		{
+			printf("dfu_write_memory failed: received address wrong/unsupported\n");
+			return -1;
+		} else if (status.bStatus == DFU_STATUS_ERROR_VENDOR)
+		{
+			printf("dfu_write_memory failed: flash read protection enabled\n");
+			return -2;
+		} else
+		{
+			printf("dfu_write_memory failed: reason unknown\n");
+			return -3;
+		}
+	} else
+	{
+		//success
+		return 0;
+	}
+	
 	return 1;
 }
 
-int32_t dfu_erase_mass(dfu_device * device)
+int32_t dfu_mass_erase(dfu_device * device)
 {
 	int8_t command[1] = {0x41};
 	dfu_status status;
@@ -153,8 +283,6 @@ int32_t dfu_erase_mass(dfu_device * device)
 	}
 }
 	
-
-
 /*
 *  Gets the device into the dfuIDLE state if possible.
 *
@@ -162,7 +290,7 @@ int32_t dfu_erase_mass(dfu_device * device)
 *
 *  returns 0 on success, 1 if device was reset, error otherwise
 */
-static int32_t dfu_make_idle( dfu_device *device, const int initial_abort )
+int32_t dfu_make_idle( dfu_device *device, const int initial_abort )
 {
 	dfu_status status;
 	int32_t retries = 4;

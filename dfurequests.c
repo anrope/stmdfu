@@ -23,14 +23,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <libusb-1.0/libusb.h>
+#include <time.h>
 #include "dfurequests.h"
-
-/* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
-#define DFU_TIMEOUT 10000
-
-/* Time (in ms) for the device to wait for the usb reset after being told to detach
- * before the giving up going into dfu mode. */
-#define DFU_DETACH_TIMEOUT 1000
 
 #if HAVE_CONFIG_H
 # include <config.h>
@@ -55,7 +49,7 @@ int32_t dfu_detach( dfu_device *device, const int32_t timeout )
     }
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_DETACH,
           /* wValue        */ timeout,
           /* wIndex        */ device->interface,
@@ -94,7 +88,7 @@ int32_t dfu_download(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t 
     }
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_DNLOAD,
           /* wValue        */ wvalue,
           /* wIndex        */ device->interface,
@@ -129,7 +123,7 @@ int32_t dfu_upload(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t le
     }
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_UPLOAD,
           /* wValue        */ wvalue,
           /* wIndex        */ device->interface,
@@ -152,19 +146,25 @@ int32_t dfu_get_status( dfu_device *device, dfu_status *status )
 {
     char buffer[6];
     int32_t result;
-
+	struct timespec req;
+	
     if( (NULL == device) || (NULL == device->handle) ) {
         return -1;
     }
 
     /* Initialize the status data structure */
-    status->bStatus       = DFU_STATUS_ERROR_UNKNOWN;
-    status->bwPollTimeout = 0;
-    status->bState        = STATE_DFU_ERROR;
-    status->iString       = 0;
+//     status->bStatus       = DFU_STATUS_ERROR_UNKNOWN;
+//     status->bwPollTimeout = 0;
+//     status->bState        = STATE_DFU_ERROR;
+//     status->iString       = 0;
+	
+	status->bStatus       = -1;
+	status->bwPollTimeout = -1;
+	status->bState        = -1;
+	status->iString       = -1;
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_GETSTATUS,
           /* wValue        */ 0,
           /* wIndex        */ device->interface,
@@ -180,6 +180,24 @@ int32_t dfu_get_status( dfu_device *device, dfu_status *status )
 
         status->bState  = buffer[4];
         status->iString = buffer[5];
+		
+		printf("Status:<%d:%s>\tWait:<%d>\tState:<%d:%s>\tidx:<%d>\n",
+				status->bStatus, dfu_status_to_string(status->bStatus),
+				status->bwPollTimeout,
+				status->bState, dfu_state_to_string(status->bState),
+				status->iString
+				);
+		
+		if (status->bwPollTimeout != 0)
+		{
+			req.tv_sec = 0;
+			req.tv_nsec = status->bwPollTimeout * 1000000;
+			if (0 > nanosleep(&req, NULL))
+			{
+				printf("dfu_get_status: nanosleep failed");
+			}
+		}
+				
     } else {
         if( 0 < result ) {
             /* There was an error, we didn't get the entire message. */
@@ -206,7 +224,7 @@ int32_t dfu_clear_status( dfu_device *device )
     }
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT| LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_OUT| LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_CLRSTATUS,
           /* wValue        */ 0,
           /* wIndex        */ device->interface,
@@ -234,7 +252,7 @@ int32_t dfu_get_state( dfu_device *device )
     }
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_GETSTATE,
           /* wValue        */ 0,
           /* wIndex        */ device->interface,
@@ -267,7 +285,7 @@ int32_t dfu_abort( dfu_device *device )
     }
 
     result = libusb_control_transfer( device->handle,
-          /* bmRequestType */ USB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
+          /* bmRequestType */ LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_CLASS | LIBUSB_RECIPIENT_INTERFACE,
           /* bRequest      */ DFU_ABORT,
           /* wValue        */ 0,
           /* wIndex        */ device->interface,

@@ -25,6 +25,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
+#define DFU_TIMEOUT 2500
+
+/* Time (in ms) for the device to wait for the usb reset after being told to detach
+* before the giving up going into dfu mode. */
+#define DFU_DETACH_TIMEOUT 1000
+
 //DFU interface constants
 #define DFU_ITF_CLASS 0xfe
 #define DFU_ITF_SUBCLASS 0x01

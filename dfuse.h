@@ -5,9 +5,14 @@
 #define uint16_t u_int16_t
 #define uint32_t u_int32_t
 
-#define PREFIXLEN 11
-#define SUFFIXLEN 16
-#define TARPREFIXLEN 274
+#define STMDFU_PREFIXLEN 11
+#define STMDFU_SUFFIXLEN 16
+#define STMDFU_TARPREFIXLEN 274
+
+#define READBIN_READLEN 100
+
+#define DFUWRITE(var) (write(dfufile, &(var), sizeof(var)))
+#define DFUREAD(var) (read(dfufile, &(var), sizeof(var)))
 
 typedef struct {
 	char signature[5];
@@ -55,3 +60,17 @@ typedef struct {
 	dfuse_image ** images;
 	dfuse_suffix * suffix;
 } dfuse_file;
+
+dfuse_file * dfuse_init(int binfile);
+void dfuse_readbin(dfuse_file * dfusefile, int binfile);
+int dfuse_writeprefix(dfuse_file * dfusefile, int dfufile);
+int dfuse_readprefix(dfuse_file * dfusefile, int dfufile);
+int dfuse_writetarprefix(dfuse_file * dfusefile, int dfufile);
+int dfuse_readtarprefix(dfuse_file * dfusefile, int dfufile);
+int dfuse_writeimgelement(dfuse_file * dfusefile, int dfufile);
+int dfuse_readimgelement_meta(dfuse_file * dfusefile, int dfufile);
+int dfuse_readimgelement_data(dfuse_file * dfusefile, int dfufile);
+int dfuse_writesuffix(dfuse_file * dfusefile, int dfufile);
+int dfuse_readsuffix(dfuse_file * dfusefile, int dfufile);
+void calccrc(dfuse_file * dfusefile, int dfufile);
+void dfuse_struct_cleanup(dfuse_file * dfusefile);
