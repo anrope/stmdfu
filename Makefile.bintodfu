@@ -1,0 +1,5 @@
+srcfiles = dfuse.c crc32.c bintodfu.c
+CC = gcc
+
+bintodfu : $(srcfiles)
+	$(CC) $(srcfiles) -o bintodfu

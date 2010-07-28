@@ -1,0 +1,5 @@
+#This udev rule allows STM32 microcontrollers to be
+#available to userspace for the purpose of USB DFU
+#(Device Firmware Upgrade) operations
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="0483", ATTR{idProduct}=="df11", MODE:="0666"

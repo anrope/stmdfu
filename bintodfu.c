@@ -16,8 +16,8 @@ int main(int argc, char * argv[])
 	int dfufile;
 	dfuse_file * dfusefile;
 	
-	binfile = open("pathto.bin", O_RDONLY);
-	dfufile = open("pathto.dfuse", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+	binfile = open(argv[1], O_RDONLY);
+	dfufile = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	
 	dfusefile = dfuse_init(binfile);
 	
@@ -38,7 +38,7 @@ int main(int argc, char * argv[])
 	
 	printf("Checksum: <%x>\n", dfusefile->suffix->crc);
 	
-	dfuse_cleanup(dfusefile);
+	dfuse_struct_cleanup(dfusefile);
 	
 	close(binfile);
 	close(dfufile);
