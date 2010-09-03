@@ -1,6 +1,0 @@
-srcfiles = dfucommands.c dfurequests.c dfuse.c crc32.c stmdfu.c
-cflags = -lusb-1.0 -lm -g
-CC = gcc
-
-stmdfu : $(srcfiles)
-	$(CC) $(cflags) $(srcfiles) -o stmdfu

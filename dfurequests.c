@@ -1,4 +1,18 @@
 /*
+dfurequests.{c,h} :
+Implements the lower level DFU requests, which are made up of USB control transfers.
+
+More information on the DFU requests is available in the Universal Serial Bus Device
+Class Specification for Device Firmware Upgrade.
+*/
+
+/*
+ * Updated to use libusb-1, and to take wvalue as an 
+ * argument in upload/download
+ *
+ * arp <anrope@gmail.com>
+ *
+ * Originally from:
  * dfu-programmer
  *
  * $Id: dfu.c 81 2009-01-22 09:45:15Z schmidtw $
@@ -32,7 +46,7 @@
 #include <sys/types.h>
 
 /*
- *  DFU_DETACH Request (DFU Spec 1.0, Section 5.1)
+ *  DFU_DETACH Request (DFU Spec 1.1, Section 5.1)
  *
  *  device    - the dfu device to commmunicate with
  *  timeout   - the timeout in ms the USB device should wait for a pending
@@ -61,7 +75,7 @@ int32_t dfu_detach( dfu_device *device, const int32_t timeout )
 }
 
 /*
- *  DFU_DNLOAD Request (DFU Spec 1.0, Section 6.1.1)
+ *  DFU_DNLOAD Request (DFU Spec 1.1, Section 6.1.1)
  *
  *  device    - the dfu device to commmunicate with
  *  length    - the total number of bytes to transfer to the USB
@@ -100,7 +114,7 @@ int32_t dfu_download(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t 
 }
 
 /*
- *  DFU_UPLOAD Request (DFU Spec 1.0, Section 6.2)
+ *  DFU_UPLOAD Request (DFU Spec 1.1, Section 6.2)
  *
  *  device    - the dfu device to commmunicate with
  *  length    - the maximum number of bytes to receive from the USB
@@ -135,7 +149,7 @@ int32_t dfu_upload(dfu_device *device, int32_t wvalue, uint8_t* data, int32_t le
 }
 
 /*
- *  DFU_GETSTATUS Request (DFU Spec 1.0, Section 6.1.2)
+ *  DFU_GETSTATUS Request (DFU Spec 1.1, Section 6.1.2)
  *
  *  device    - the dfu device to commmunicate with
  *  status    - the data structure to be populated with the results
@@ -209,7 +223,7 @@ int32_t dfu_get_status( dfu_device *device, dfu_status *status )
 }
 
 /*
- *  DFU_CLRSTATUS Request (DFU Spec 1.0, Section 6.1.3)
+ *  DFU_CLRSTATUS Request (DFU Spec 1.1, Section 6.1.3)
  *
  *  device    - the dfu device to commmunicate with
  *
@@ -236,7 +250,7 @@ int32_t dfu_clear_status( dfu_device *device )
 }
 
 /*
- *  DFU_GETSTATE Request (DFU Spec 1.0, Section 6.1.5)
+ *  DFU_GETSTATE Request (DFU Spec 1.1, Section 6.1.5)
  *
  *  device    - the dfu device to commmunicate with
  *
@@ -270,7 +284,7 @@ int32_t dfu_get_state( dfu_device *device )
 }
 
 /*
- *  DFU_ABORT Request (DFU Spec 1.0, Section 6.1.4)
+ *  DFU_ABORT Request (DFU Spec 1.1, Section 6.1.4)
  *
  *  device    - the dfu device to commmunicate with
  *

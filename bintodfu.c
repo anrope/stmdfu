@@ -1,3 +1,12 @@
+/*
+bintodfu.c :
+Takes a .bin file containing the memory image for flashing, and wraps it up in STM's
+DfuSe file format.
+
+More information on the DfuSe file format is available in DfuSe File Format
+Specification, UM0391.
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

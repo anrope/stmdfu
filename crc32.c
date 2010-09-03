@@ -1,4 +1,10 @@
 /*
+crc32.{c,h} :
+Provides routines for calculating 32 bit Cyclic Redundancy Checks (CRCs).
+DfuSe uses a CRC to verify the contents of the DfuSe file.
+*/
+
+/*
  * efone - Distributed internet phone system.
  *
  * (c) 1999,2000 Krzysztof Dabrowski
@@ -24,7 +30,7 @@
  */
 u_int32_t crc_tab[256];
 
-/* chksum_crc() -- to a given block, this one calculates the
+/* chksum_crc32() -- to a given block, this one calculates the
  *				crc32-checksum until the length is
  *				reached. the crc32-checksum will be
  *				the result.

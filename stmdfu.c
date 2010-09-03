@@ -1,3 +1,11 @@
+/*
+stmdfu.c :
+This is the user interface to the USB DFU commands. A user invokes this program
+on the command line with an argument (flash, dump, erase, etc.) and other necessary
+information, and the program makes the necessary calls to DFU commands to complete
+the operation.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,7 +115,7 @@ int main(int argc, char * argv[])
 		
 		dfu_make_idle(dfudev, 0);
 		
-		dfu_read_memory(dfudev, memdump, dumpsize);
+		dfu_read_flash(dfudev, memdump, dumpsize);
 		
 		for (i=0; i<dumpsize/10; i++)
 		{

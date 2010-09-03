@@ -1,3 +1,12 @@
+/*
+dfuse.{c,h} :
+Defines the data structures that follow the DfuSe file format. Has routines for
+reading and writing each of the different sections of a DfuSe file.
+
+More information on the DfuSe file format is available in DfuSe File Format
+Specification, UM0391.
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +18,11 @@
 #include "dfuse.h"
 #include "crc32.h"
 
+/*
+	dfuse_init() allocates memory for the various dfuse structs
+	that make up the dfuse file, and populates fields that are
+	independent of the firmware image.
+*/
 dfuse_file * dfuse_init(int binfile)
 {
 	int i, j;
@@ -81,21 +95,6 @@ dfuse_file * dfuse_init(int binfile)
 		dfusefile->images[i]->tarprefix->num_elements = 1;
 	}
 	
-	/*
-	remaining fields:
-	length of image excluding target prefix
-	dfusefile->images[i]->tarprefix->target_size
-	
-	dfusefile->images[i]->imgelement[j]->element_address
-	dfusefile->images[i]->imgelement[j]->element_size
-	dfusefile->images[i]->imgelement[j]->data
-	
-	total DFU file length in bytes
-	dfusefile->prefix->dfu_image_size
-	
-	dfusefile->suffix->crc
-	*/
-	
 	fstat(binfile, &stat);
 	
 	dfusefile->images[0]->tarprefix->target_size = stat.st_size +
@@ -119,6 +118,9 @@ dfuse_file * dfuse_init(int binfile)
 	return dfusefile;
 }
 
+/*
+	dfuse_readbin() reads the binary firmware image into memory
+*/
 void dfuse_readbin(dfuse_file * dfusefile, int binfile)
 {
 	int i, j;
@@ -297,6 +299,10 @@ int dfuse_readsuffix(dfuse_file * dfusefile, int dfufile)
 	return ct;
 }
 
+/*
+	calccrc() calculates a 32 bit CRC to go in the
+	suffix of the dfuse file
+*/
 void calccrc(dfuse_file * dfusefile, int dfufile)
 {
 	char * crcbuf;
@@ -332,6 +338,10 @@ void calccrc(dfuse_file * dfusefile, int dfufile)
 	free(crcbuf);
 }
 
+/*
+	dfuse_struct_cleanup() deallocates the dfuse file
+	structures
+*/
 void dfuse_struct_cleanup(dfuse_file * dfusefile)
 {
 	int i, j;

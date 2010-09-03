@@ -1,5 +1,9 @@
 #!/usr/bin/perl
 
+#arpflash.pl :
+#Wrapper script. Invokes all commands from running makefile on user code, to flashing
+#user code to chip.
+
 $pathtosrc = "/home/arp/stm/arp";
 $pathtobintodfu = "/home/arp/stm/dfu/stmdfu";
 $pathtostmdfu = "/home/arp/stm/dfu/stmdfu";
