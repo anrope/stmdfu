@@ -27,6 +27,7 @@ int32_t dfu_read_flash(dfu_device * device, uint8_t * membuf, uint32_t length)
 	int i;
 	int rv;
 	uint8_t finalpage[2048];
+	int finalread;
 	
 	read_2048 = ceil(length / 2048);
 	
@@ -160,6 +161,7 @@ int32_t dfu_write_flash(dfu_device * device, uint8_t * membuf, uint32_t length)
 	dfu_status status;
 	int rv;
 	uint8_t finalpage[2048];
+	int finalwrite;
 	
 	//round up the number of writes to the next 2kB page
 	write_2048 = ceil(length / 2048.);

@@ -42,7 +42,7 @@ dfu_write_flash() writes (in 2kB pages) the contents of membuf
 to flash memory. The write begins at the location pointed to by
 the address pointer (use dfu_set_address_pointer()).
 */
-int32_t dfu_write_memory(dfu_device * device, uint8_t * membuf, uint32_t length);
+int32_t dfu_write_flash(dfu_device * device, uint8_t * membuf, uint32_t length);
 
 /*
 dfu_set_address_pointer() sets the STM32 device's address pointer.

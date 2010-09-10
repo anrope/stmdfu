@@ -35,10 +35,6 @@ Class Specification for Device Firmware Upgrade.
 #ifndef __DFU_H__
 #define __DFU_H__
 
-#include <usb.h>
-#include <stdint.h>
-#include <stddef.h>
-
 /* Wait for 10 seconds before a timeout since erasing/flashing can take some time. */
 #define DFU_TIMEOUT 2500
 

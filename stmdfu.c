@@ -96,7 +96,7 @@ int main(int argc, char * argv[])
 		writesize = dfusefile->images[0]->imgelement[0]->element_size / 2048;
 		writesize = (writesize + 1) * 2048;
 		
-		dfu_write_memory(dfudev, dfusefile->images[0]->imgelement[0]->data, writesize);
+		dfu_write_flash(dfudev, dfusefile->images[0]->imgelement[0]->data, writesize);
 		
 		dfuse_struct_cleanup(dfusefile);
 	}
@@ -247,6 +247,12 @@ dfu_device * find_dfu_device()
 		printf("error opening dfudev handle \n");
 	}
 	libusb_free_device_list(devlist, 1);
+	
+	if (ndfudevs == 0)
+	{
+		printf("No STM32 DFU Device connected.\n Check boot switches and replugin board.\n");
+		exit(-1);
+	}
 	
 	if (ndfudevs > 1)
 	{
