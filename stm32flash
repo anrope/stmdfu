@@ -1,0 +1,95 @@
+#!/usr/bin/perl
+
+#arpflash.pl :
+#Wrapper script. Invokes all commands from running makefile on user code, to flashing
+#user code to chip.
+
+use Switch;
+
+$enmake = 0;
+$enhelp = 0;
+$enname = 0;
+
+$opts = shift();
+
+while (defined($opts))
+{
+	switch ($opts)
+	{
+		case m/-m/ {$enmake = 1}
+		case m/-h/ {$enhelp = 1}
+		case m/-f/ {$enname = 1}
+	}
+
+	if ($enname)
+	{
+		$newname = shift();
+		if (!defined($newname))
+		{
+			$enhelp = 1;
+		}
+	}
+	
+	$opts = shift();
+}
+
+if ($enhelp)
+{
+	print "stm32flash usage:\n
+	-m execute `make` before flashing stm32 device\n
+	-h print this help\n
+	-f <file_name> flash image contained in <file_name>.bin\n";
+	die;
+}
+
+$pathtosrc = `pwd`;
+chomp($pathtosrc);
+$pathtotools = "/usr/linux/bin";
+$pathtobintodfu = "$pathtotools/stmdfu";
+$pathtostmdfu = "$pathtotools/stmdfu";
+
+#get executable name from makefile
+open(IN, "$pathtosrc/Makefile");
+while (<IN>)
+{
+	m/executable = (.*)/;
+	$executable = $1;
+}
+close IN;
+
+if ($enname)
+{
+	$executable = $newname;
+}
+
+if ($enmake)
+{
+	$domake = "cd $pathtosrc && make";
+}
+
+if (-e $executable)
+{
+	$executable =~ s/(.*)\.bin/$1/;
+}
+
+$dobintodfu = "$pathtotools/bintodfu $pathtosrc/$executable.bin $pathtosrc/$executable.dfuse";
+$doerase = "$pathtotools/stmdfu masserase";
+$doflash = "$pathtotools/stmdfu flash $pathtosrc/$executable.dfuse";
+
+if ($enmake)
+{
+	print "$domake\n";
+	print `$domake`;
+}
+
+unless (-e "$pathtosrc/$executable.bin")
+{
+	die;
+}
+
+print "$dobintodfu\n";
+print `$dobintodfu`;
+print "$doerase\n";
+print `$doerase`;
+print "$doflash\n";
+print `$doflash`;

@@ -26,14 +26,22 @@ int main(int argc, char * argv[])
 	dfuse_file * dfusefile;
 	
 	binfile = open(argv[1], O_RDONLY);
+	
+	if (binfile == -1)
+	{
+		printf("Could not open %s\n", argv[1]);
+		return -1;
+	}
+	
 	dfufile = open(argv[2], O_RDWR | O_CREAT | O_TRUNC, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
 	
-	dfusefile = dfuse_init(binfile);
+	if (dfufile == -1)
+	{
+		printf("Could not create %s\n", argv[2]);
+		return -2;
+	}
 	
-	printf("<%i> :: <%i> :: <%i>\n", dfusefile->images[0]->tarprefix->target_size, \
-		dfusefile->images[0]->imgelement[0]->element_size, \
-		dfusefile->prefix->dfu_image_size);
-	printf("Checksum should be: 0xa8775a06\n");
+	dfusefile = dfuse_init(binfile);
 	
 	dfuse_readbin(dfusefile, binfile);
 	
@@ -45,7 +53,7 @@ int main(int argc, char * argv[])
 	
 	dfuse_writesuffix(dfusefile, dfufile);
 	
-	printf("Checksum: <%x>\n", dfusefile->suffix->crc);
+// 	printf("Checksum: <%x>\n", dfusefile->suffix->crc);
 	
 	dfuse_struct_cleanup(dfusefile);
 	

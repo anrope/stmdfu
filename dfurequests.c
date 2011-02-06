@@ -195,12 +195,14 @@ int32_t dfu_get_status( dfu_device *device, dfu_status *status )
         status->bState  = buffer[4];
         status->iString = buffer[5];
 		
+		#if STMDFU_DEBUG_PRINTFS
 		printf("Status:<%d:%s>\tWait:<%d>\tState:<%d:%s>\tidx:<%d>\n",
 				status->bStatus, dfu_status_to_string(status->bStatus),
 				status->bwPollTimeout,
 				status->bState, dfu_state_to_string(status->bState),
 				status->iString
 				);
+		#endif
 		
 		if (status->bwPollTimeout != 0)
 		{

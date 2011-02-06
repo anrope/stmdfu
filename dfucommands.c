@@ -29,13 +29,15 @@ int32_t dfu_read_flash(dfu_device * device, uint8_t * membuf, uint32_t length)
 	uint8_t finalpage[2048];
 	int finalread;
 	
-	read_2048 = ceil(length / 2048);
+	read_2048 = ceil(length / 2048.);
 	
 	//flash reads must be 2k, which is the flash block size on stm32
 	//read all but the final page
 	for (i=0; i<(read_2048-1); i++)
 	{
+		#if STMDFU_DEBUG_PRINTFS
 		printf("read_2048: <%d>\n", i);
+		#endif
 		if (0 > dfu_upload(device, i+2, &membuf[i*2048], 2048))
 		{
 			printf("read_2048 error\n");
@@ -60,7 +62,9 @@ int32_t dfu_read_flash(dfu_device * device, uint8_t * membuf, uint32_t length)
 	}
 	
 	//read the final page
+	#if STMDFU_DEBUG_PRINTFS
 	printf("final read_2048: <%d>\n", (read_2048-1));
+	#endif
 	if (0 > dfu_upload(device, i+2, finalpage, 2048))
 	{
 		printf("read_2048 error\n");
@@ -169,7 +173,9 @@ int32_t dfu_write_flash(dfu_device * device, uint8_t * membuf, uint32_t length)
 	//write all but the final page
 	for (i=0; i<(write_2048-1); i++)
 	{
+		#if STMDFU_DEBUG_PRINTFS
 		printf("write_2048: <%d>\n", i);
+		#endif
 		rv = dfu_download(device, i+2, &membuf[i*2048], 2048);
 		
 		if (0 > rv)
@@ -225,7 +231,9 @@ int32_t dfu_write_flash(dfu_device * device, uint8_t * membuf, uint32_t length)
 		finalpage[i] = 0xff;
 	}
 	
+	#if STMDFU_DEBUG_PRINTFS
 	printf("final write_2048: <%d>\n", (write_2048-1));
+	#endif
 	rv = dfu_download(device, (write_2048-1)+2, finalpage, 2048);
 	
 	if (0 > rv)
